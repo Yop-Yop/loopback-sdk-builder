@@ -25009,6 +25009,7 @@
 	      });
 	      if (pubsub) {
 	        console.info('SDK: PubSub functionality is disabled, generate SDK using -io enabled');
+            return new Observable();
 	      } else {
 	        // Headers to be sent
 	        var headers = {
