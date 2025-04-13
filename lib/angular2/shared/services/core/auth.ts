@@ -29,12 +29,23 @@ export class LoopBackAuth {
    * The constructor will initialize the token loading data from storage
    **/
   constructor(@Inject(InternalStorage) protected storage: InternalStorage) {
-    this.token.id = this.load('id');
-    this.token.user = this.load('user');
-    this.token.userId = this.load('userId');
-    this.token.created = this.load('created');
-    this.token.ttl = this.load('ttl');
-    this.token.rememberMe = this.load('rememberMe');
+    this.refreshTokenFromStorage();
+  }
+
+  private refreshTokenFromStorage(): void {
+    const storedToken = {
+      id: this.load('id'),
+      user: this.load('user'),
+      userId: this.load('userId'),
+      created: this.load('created'),
+      ttl: this.load('ttl'),
+      scopes: this.load('scopes'),
+      rememberMe: this.load('rememberMe')
+    };
+
+    this.token = Object.values(storedToken).some(value => value !== null)
+        ? storedToken
+        : new SDKToken();
   }
   /**
    * @method setRememberMe
@@ -66,8 +77,17 @@ export class LoopBackAuth {
    * This method will set a flag in order to remember the current credentials
    **/
   public setToken(token: SDKToken): void {
-    this.token = Object.assign({}, this.token, token);
+    // Clear existing token first
+    this.clear();
+
+    // Set new token
+    this.token = JSON.parse(JSON.stringify(token));
+
+    // Persist to storage
     this.save();
+
+    // Refresh from storage to ensure consistency
+    this.refreshTokenFromStorage();
   }
   /**
    * @method getToken
@@ -85,7 +105,9 @@ export class LoopBackAuth {
    * This method will return the actual token string, not the object instance.
    **/
   public getAccessTokenId(): string {
-    return this.token.id;
+    // Always refresh from storage first
+    this.refreshTokenFromStorage();
+    return this.token?.id || null;
   }
   /**
    * @method getCurrentUserId
@@ -113,8 +135,10 @@ export class LoopBackAuth {
    * But only if rememberMe is enabled.
    **/
   public save(): boolean {
-      let today = new Date();
-      let expires = new Date(today.getTime() + (this.token.ttl * 1000));
+    let today = new Date();
+    let expires = new Date(today.getTime() + (this.token.ttl * 1000));
+
+    try {
       this.persist('id', this.token.id, expires);
       this.persist('user', this.token.user, expires);
       this.persist('userId', this.token.userId, expires);
@@ -122,7 +146,11 @@ export class LoopBackAuth {
       this.persist('ttl', this.token.ttl, expires);
       this.persist('rememberMe', this.token.rememberMe, expires);
       return true;
-  };
+    } catch (error) {
+      console.error('Error saving token:', error);
+      return false;
+    }
+  }
   /**
    * @method load
    * @param {string} prop Property name
@@ -140,7 +168,9 @@ export class LoopBackAuth {
    * This method will clear cookies or the local storage.
    **/
   public clear(): void {
-    Object.keys(this.token).forEach((prop: string) => this.storage.remove(`${this.prefix}${prop}`));
+    Object.keys(this.token).forEach((prop: string) => {
+      this.storage.remove(`${this.prefix}${prop}`);
+    });
     this.token = new SDKToken();
   }
   /**
@@ -152,9 +182,9 @@ export class LoopBackAuth {
   protected persist(prop: string, value: any, expires?: Date): void {
     try {
       this.storage.set(
-        `${this.prefix}${prop}`,
-        (typeof value === 'object') ? JSON.stringify(value) : value,
-        this.token.rememberMe?expires:null
+          `${this.prefix}${prop}`,
+          (typeof value === 'object') ? JSON.stringify(value) : value,
+          this.token.rememberMe?expires:null
       );
     }
     catch (err) {
@@ -162,3 +192,4 @@ export class LoopBackAuth {
     }
   }
 }
+
