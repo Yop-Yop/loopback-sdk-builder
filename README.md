@@ -12,7 +12,7 @@ The [LoopBack SDK Builder](https://www.npmjs.com/package/@mean-expert/loopback-s
 
 ````sh
 $ cd to/loopback/project
-$ npm install --save-dev @mean-expert/loopback-sdk-builder
+$ npm install --save-dev github:Yop-Yop/loopback-sdk-builder
 ````
 
 # Documentation

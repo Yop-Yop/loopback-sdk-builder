@@ -43,7 +43,7 @@ export class LoopBackAuth {
       rememberMe: this.load('rememberMe')
     };
 
-    this.token = Object.values(storedToken).some(value => value !== null)
+    this.token = Object.values(storedToken).some((value: null) => value !== null)
         ? storedToken
         : new SDKToken();
   }
@@ -136,7 +136,7 @@ export class LoopBackAuth {
    **/
   public save(): boolean {
     let today = new Date();
-    let expires = new Date(today.getTime() + (this.token.ttl * 1000));
+    let expires = new Date(today.getTime() + (((this.token.ttl) ? this.token.ttl : (60 * 60 * 24)) * 1000));
 
     try {
       this.persist('id', this.token.id, expires);

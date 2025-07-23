@@ -18,7 +18,7 @@ export class StorageBrowser {
    * The getter will return any type of data persisted in localStorage.
    **/
   get(key: string): any {
-    let data: string = localStorage.getItem(key);
+    let data: string | null = localStorage.getItem(key);
     return this.parse(data);
   }
   /**
